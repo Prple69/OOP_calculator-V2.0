@@ -15,6 +15,6 @@ CaloriesCalculator - калькулятор полученных калорий.
 1. Клонируйте репозиторий  
 `git clone https://github.com/Prple69/OOP_calculator_V2.0.git`
 2. Перейдите в папку репозитория  
-`cd OOP_calculator`
+`cd OOP_calculator_V2.0`
 3. Запустите файл `calculator.py`  
 `python calculator.py`
