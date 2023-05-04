@@ -9,12 +9,12 @@ CaloriesCalculator - калькулятор полученных калорий.
 Хранение записей осуществляется в списке, являющимся атрибутом класса Calculator. Сами записи являются объектами класса Record.
 
 ## Для запуска необходимо
-- Python 3.9 и выше
+- Python 3.7.6 и выше
 
 ## Как запустить
 1. Клонируйте репозиторий  
 `git clone https://github.com/Prple69/OOP_calculator.git`
 2. Перейдите в папку репозитория  
 `cd OOP_calculator`
-3. Запустите файл `main.py`  
-`python main.py`
+3. Запустите файл `calculator.py`  
+`python calculator.py`
