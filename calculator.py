@@ -1,16 +1,17 @@
-"""OOP Calculator for money and calories"""
+"""OOP Calculator for money and calories."""
 
 import datetime as dt
+import unittest
 
 DATE_FORMAT = '%d.%m.%Y'
 
 class Record():
-    """Класс для хранения записей"""
+    """Класс для хранения записей."""
     amount: float
     date: str
     comment: str
 
-    def __init__(self, amount, comment, date=None) -> None:
+    def __init__(self, amount:float, comment:str, date:str = None) -> None:
         self.amount = amount
         self.comment = comment
         self.date = date
@@ -18,42 +19,33 @@ class Record():
             self.date = dt.datetime.now().strftime(DATE_FORMAT)
 
 class Calculator():
-    """Класс основного калькулятора"""
+    """Класс основного калькулятора."""
     
     limit: float
 
-    def __init__(self, limit) -> None:
+    def __init__(self, limit:float) -> None:
         self.limit = limit
         self.records = []
     
     def add_record(self, record:Record) -> None:
-        """Добавляет запись"""
+        """Добавляет запись."""
         self.records.append(record)
 
     def get_today_stats(self) -> float:
-        """Выводит потраченное значения за сегодня"""
-        spend_money_today = float()
-        for record in self.records:
-            if record.date == dt.datetime.now().strftime(DATE_FORMAT):
-                spend_money_today+=record.amount
-        return spend_money_today
+        """Выводит потраченное значения за сегодня."""
+        return float(sum(record.amount for record in self.records if record.date == dt.datetime.now().strftime(DATE_FORMAT)))
     
     def get_week_stats(self) -> float:
-        """Выводит потраченное значения за неделю"""
-        spend_money_week = float()
+        """Выводит потраченное значения за неделю."""
         date_week_ago = dt.datetime.now().date() - dt.timedelta(days=7)
-        for record in self.records:
-            if dt.datetime.strptime(record.date, DATE_FORMAT).date() > date_week_ago:
-                spend_money_week += record.amount
-        return spend_money_week
+        return float(sum(record.amount for record in self.records if dt.datetime.strptime(record.date, DATE_FORMAT).date() > date_week_ago))
     
     def get_remaining_value(self) -> float:
-        """Считает сколько денег/калорий еще можно потратить сегодня"""
-        today_money = self.get_today_stats()
-        return self.limit - today_money
+        """Считает сколько денег/калорий еще можно потратить сегодня."""
+        return self.limit - self.get_today_stats()
 
 class CaloriesCalculator(Calculator):
-    """Класс калькулятора калорий"""
+    """Класс калькулятора калорий."""
     
     NO_CALORIES_RESPONSE = 'Хватит есть!'
     REMAIN_CALORIES_RESPONSE = (
@@ -62,15 +54,14 @@ class CaloriesCalculator(Calculator):
         )
 
     def get_calories_remained(self) -> str:
-        """Считает сколько еще калорий можно съесть и выводит"""
+        """Считает сколько еще калорий можно съесть и выводит."""
         calories_remained = self.get_remaining_value()
         if calories_remained > 0:
             return self.REMAIN_CALORIES_RESPONSE.format(calories=calories_remained)
-        else:
-            return self.NO_CALORIES_RESPONSE
+        return self.NO_CALORIES_RESPONSE
 
 class CashCalculator(Calculator):
-    """Класс калькулятора денег"""
+    """Класс калькулятора денег."""
     
     CURRENSY_RATE ={
         'rub':(1, 'руб'),
@@ -82,53 +73,54 @@ class CashCalculator(Calculator):
     DEBT_MONEY_RESPONSE = 'Денег нет, держись: твой долг - {value} {valute}'
     REMAIN_MONEY_RESPONSE = 'На сегодня осталось {value} {valute}'
 
-    def get_today_cash_remained(self, currency) -> str:
-        """Считает сколько еще денег можно потратить и выводит"""
+    def get_today_cash_remained(self, currency:str) -> str:
+        """Считает сколько еще денег можно потратить и выводит."""
         money_remained = self.get_remaining_value()
         if money_remained > 0:
             return self.REMAIN_MONEY_RESPONSE.format(value = money_remained / self.CURRENSY_RATE[currency][0], valute = self.CURRENSY_RATE[currency][1])
         if money_remained == 0:
             return self.NO_MONEY_RESPONSE
-        if money_remained < 0:
-            return self.DEBT_MONEY_RESPONSE.format(value = money_remained / self.CURRENSY_RATE[currency][0], valute = self.CURRENSY_RATE[currency][1])
+        return self.DEBT_MONEY_RESPONSE.format(value = money_remained / self.CURRENSY_RATE[currency][0], valute = self.CURRENSY_RATE[currency][1])
+
+class TestCalculator(unittest.TestCase):
+    def setUp(self):
+        self.cash = CashCalculator(1000)
+        self.cash.add_record(Record(amount=100, comment='Обед'))
+        self.cash.add_record(Record(amount=150, comment='Подарок Жене', date='03.05.2023'))
+    
+        self.calories = CaloriesCalculator(1000)
+        self.calories.add_record(Record(amount=50, comment='Обед'))
+        self.calories.add_record(Record(amount=300, comment='Фастфуд', date='03.05.2023'))
+    
+    def test_cash_stats(self):
+        self.assertEqual(self.cash.get_today_stats(), 100.0)
+        self.assertEqual(self.cash.get_week_stats(), 250.0)
+        
+    
+    def test_calories_stats(self):
+        self.assertEqual(self.calories.get_today_stats(), 50.0)
+        self.assertEqual(self.calories.get_week_stats(), 350.0)
+    
+    def test_cash_remained(self):
+        self.assertEqual(self.cash.get_today_cash_remained('rub'), 'На сегодня осталось 900.0 руб')
+        self.assertEqual(self.cash.get_today_cash_remained('usd'), 'На сегодня осталось 11.25 USD')
+        self.assertEqual(self.cash.get_today_cash_remained('eur'), 'На сегодня осталось 9.0 Euro')
+        self.assertEqual(self.calories.get_calories_remained(), 'Сегодня можно съесть что-нибудь еще, но с общей калорийностью не более 950.0 кКал')
+    
+    def test_no_value(self):
+        self.cash = CashCalculator(0)
+        self.calories = CaloriesCalculator(0)
+
+        self.assertEqual(self.cash.get_today_cash_remained('rub'), 'Денег нет, держись')
+        self.assertEqual(self.cash.get_today_cash_remained('usd'), 'Денег нет, держись')
+        self.assertEqual(self.cash.get_today_cash_remained('eur'), 'Денег нет, держись')
+        self.assertEqual(self.calories.get_calories_remained(), 'Хватит есть!')
+    
+    def test_cash_debt(self):
+        self.cash = CashCalculator(-100)
+        self.assertEqual(self.cash.get_today_cash_remained('rub'), 'Денег нет, держись: твой долг - -100.0 руб')
+        self.assertEqual(self.cash.get_today_cash_remained('usd'), 'Денег нет, держись: твой долг - -1.25 USD')
+        self.assertEqual(self.cash.get_today_cash_remained('eur'), 'Денег нет, держись: твой долг - -1.0 Euro')
 
 if __name__ == '__main__':
-
-    cash = CashCalculator(1000)
-    
-    cash.add_record(Record(amount=100, comment='Обед'))                             # Обед, сегодня, цена - 100
-    cash.add_record(Record(amount=150, comment='Подарок Жене', date='03.05.2023'))  # Подарок жене, вчера, цена -150
-
-    print(cash.get_today_stats())   # Потратил сегодня
-    print(cash.get_week_stats())    # Потратил за неделю
-
-    print(cash.get_today_cash_remained('rub'))  # Осталось в руб
-    print(cash.get_today_cash_remained('usd'))  # Осталось в usd
-    print(cash.get_today_cash_remained('eur'))  # Осталось в eur
-    
-    cash.add_record(Record(amount=900, comment='Такси'))    # Такси, сегодня, цена - 900
-    
-    print(cash.get_today_cash_remained('rub'))  # Осталось в руб
-    print(cash.get_today_cash_remained('usd'))  # Осталось в usd
-    print(cash.get_today_cash_remained('eur'))  # Осталось в eur
-    
-    cash.add_record(Record(amount=5000, comment='Новый телефон'))     # Новый телефон, сегодня, цена - 5000
-
-    print(cash.get_today_cash_remained('rub'))  # Осталось в руб
-    print(cash.get_today_cash_remained('usd'))  # Осталось в usd
-    print(cash.get_today_cash_remained('eur'))  # Осталось в eur
-
-    print('-'*50)
-
-    calories = CaloriesCalculator(1000)
-
-    calories.add_record(Record(amount=100, comment='Обед'))                        # Обед, сегодня, калорий - 100
-    calories.add_record(Record(amount=150, comment='Фастфуд', date='03.05.2023'))  # Фастфуд, вчера, калорий -150
-    
-    print(calories.get_today_stats())   # Потратил сегодня
-    print(calories.get_week_stats())    # Потратил за неделю
-
-    print(calories.get_calories_remained()) #Осталось калорий
-
-    calories.add_record(Record(amount=900, comment='Пироженое'))# Пироженое, сегодня, калорий -900
-    print(calories.get_calories_remained()) #Осталось калорий
+    unittest.main()
