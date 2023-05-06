@@ -2,31 +2,27 @@
 
 import datetime as dt
 import unittest
+from dataclasses import dataclass, field
 
 DATE_FORMAT = '%d.%m.%Y'
 
+@dataclass
 class Record():
     """Класс для хранения записей."""
     amount: float
-    date: str
     comment: str
+    date: str = None
 
-    def __init__(self, amount:float, comment:str, date:str = None) -> None:
-        self.amount = amount
-        self.comment = comment
-        self.date = date
-        if self.date is None:
-            self.date = dt.datetime.now().strftime(DATE_FORMAT)
+    if date is None:
+        date = dt.datetime.now().strftime(DATE_FORMAT)
 
+@dataclass
 class Calculator():
     """Класс основного калькулятора."""
     
     limit: float
+    records: list = field(default_factory=list)
 
-    def __init__(self, limit:float) -> None:
-        self.limit = limit
-        self.records = []
-    
     def add_record(self, record:Record) -> None:
         """Добавляет запись."""
         self.records.append(record)
@@ -46,7 +42,7 @@ class Calculator():
 
 class CaloriesCalculator(Calculator):
     """Класс калькулятора калорий."""
-    
+
     NO_CALORIES_RESPONSE = 'Хватит есть!'
     REMAIN_CALORIES_RESPONSE = (
         'Сегодня можно съесть что-нибудь еще, но '
@@ -86,11 +82,11 @@ class TestCalculator(unittest.TestCase):
     def setUp(self):
         self.cash = CashCalculator(1000)
         self.cash.add_record(Record(amount=100, comment='Обед'))
-        self.cash.add_record(Record(amount=150, comment='Подарок Жене', date='03.05.2023'))
-    
+        self.cash.add_record(Record(amount=150, comment='Подарок Жене', date='05.05.2023'))
+        
         self.calories = CaloriesCalculator(1000)
         self.calories.add_record(Record(amount=50, comment='Обед'))
-        self.calories.add_record(Record(amount=300, comment='Фастфуд', date='03.05.2023'))
+        self.calories.add_record(Record(amount=300, comment='Фастфуд', date='05.05.2023'))
     
     def test_cash_stats(self):
         self.assertEqual(self.cash.get_today_stats(), 100.0)
